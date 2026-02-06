@@ -336,6 +336,25 @@
         .hidden {
             display: none !important;
         }
+
+        .btn-sound {
+            padding: 12px 25px;
+            font-size: 22px;
+            border: none;
+            border-radius: 30px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-sound:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn-sound.muted {
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
@@ -383,6 +402,7 @@
             </div>
         </div>
         <button class="btn btn-start" id="startBtn" onclick="startGame()">开始游戏</button>
+        <button class="btn-sound" id="soundBtn" onclick="toggleSound()">🔊 音效</button>
     </div>
 
     <div class="message" id="message"></div>
@@ -410,6 +430,98 @@
         const moleEmojis = ['🐹', '🐭', '🐀'];
         const hitPraises = ['好棒！', '太厉害了！', '神速！', '真准！', '继续加油！', '666！'];
 
+        // 音效系统
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 打中音效 - 清脆的"叮"
+        function playHitSound() {
+            if (!soundEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // 连击音效 - 更高音调
+        function playComboSound(combo) {
+            if (!soundEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const baseFreq = 600 + combo * 100; // 连击越多音调越高
+            osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.25);
+        }
+
+        // 开始音效 - 上升音阶
+        function playStartSound() {
+            if (!soundEnabled || !audioCtx) return;
+            [523, 659, 784].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.2);
+                osc.start(audioCtx.currentTime + i * 0.1);
+                osc.stop(audioCtx.currentTime + i * 0.1 + 0.2);
+            });
+        }
+
+        // 结束音效 - 下降音阶
+        function playEndSound() {
+            if (!soundEnabled || !audioCtx) return;
+            [784, 659, 523].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.3);
+                osc.start(audioCtx.currentTime + i * 0.15);
+                osc.stop(audioCtx.currentTime + i * 0.15 + 0.3);
+            });
+        }
+
+        // 漏掉音效 - 低沉的"咚"
+        function playMissSound() {
+            if (!soundEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
         // 初始化游戏板
         function initBoard() {
             const board = document.getElementById('gameBoard');
@@ -427,6 +539,7 @@
         // 关闭教程
         function closeTutorial() {
             document.getElementById('tutorial').classList.add('hidden');
+            initAudio(); // 用户交互后初始化音频
         }
 
         // 速度选择
@@ -451,6 +564,8 @@
             
             document.getElementById('startBtn').textContent = '游戏中...';
             document.getElementById('startBtn').style.opacity = '0.6';
+            
+            playStartSound(); // 开始音效
             
             // 倒计时
             gameTimer = setInterval(() => {
@@ -490,6 +605,7 @@
             const hideTimer = setTimeout(() => {
                 if (mole.classList.contains('show') && !mole.classList.contains('hit')) {
                     mole.classList.remove('show');
+                    if (combo > 0) playMissSound(); // 漏掉音效
                     combo = 0; // 漏掉了，连击中断
                 }
             }, speed.stay);
@@ -512,6 +628,13 @@
             mole.classList.remove('show'); // 立即移除，防止快速点击重复判定
             mole.classList.add('hit');
             combo++;
+            
+            // 播放音效
+            if (combo >= 3) {
+                playComboSound(combo);
+            } else {
+                playHitSound();
+            }
             
             // 计算分数（连击加分）
             let points = 10;
@@ -610,6 +733,7 @@
             }
             
             showMessage(msg);
+            playEndSound(); // 结束音效
             
             document.getElementById('startBtn').textContent = '再来一局';
             document.getElementById('startBtn').style.opacity = '1';
@@ -629,6 +753,20 @@
         // 初始化
         initBoard();
         updateTimerBar();
+
+        // 音效开关
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            if (soundEnabled) {
+                btn.textContent = '🔊 音效';
+                btn.classList.remove('muted');
+                initAudio();
+            } else {
+                btn.textContent = '🔇 静音';
+                btn.classList.add('muted');
+            }
+        }
     </script>
 </body>
 </html>
