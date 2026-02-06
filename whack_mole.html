@@ -162,6 +162,17 @@
             transform: translateY(2px);
         }
 
+        .btn-sound {
+            padding: 10px 20px;
+            font-size: 18px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5);
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
         .speed-control {
             display: flex;
             align-items: center;
@@ -715,6 +726,8 @@
             moleHideTimers.forEach(t => clearTimeout(t));
             moleHideTimers = [];
             
+            playEndSound(); // 结束音效
+            
             // 隐藏所有地鼠
             document.querySelectorAll('.mole').forEach(m => {
                 m.classList.remove('show');
@@ -748,6 +761,20 @@
             setTimeout(() => {
                 msg.classList.remove('show');
             }, 3000);
+        }
+
+        // 音效开关
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            if (soundEnabled) {
+                btn.textContent = '🔊 音效';
+                btn.style.opacity = '1';
+                initAudio();
+            } else {
+                btn.textContent = '🔇 静音';
+                btn.style.opacity = '0.6';
+            }
         }
 
         // 初始化
