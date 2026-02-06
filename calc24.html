@@ -43,7 +43,6 @@
             border-radius: 25px;
         }
 
-        /* 扑克牌区域 */
         .cards-area {
             display: flex;
             gap: 12px;
@@ -84,7 +83,6 @@
             margin: 10px 0;
         }
 
-        /* 选项按钮 */
         .options {
             display: flex;
             flex-direction: column;
@@ -99,7 +97,7 @@
             border: none;
             border-radius: 15px;
             padding: 18px 25px;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
             color: #333;
             cursor: pointer;
@@ -115,7 +113,6 @@
         .option-btn.correct {
             background: linear-gradient(145deg, #4caf50, #388e3c) !important;
             color: white !important;
-            animation: pulse 0.5s ease;
         }
 
         .option-btn.wrong {
@@ -123,12 +120,6 @@
             color: white !important;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        /* 按钮 */
         .buttons {
             display: flex;
             gap: 15px;
@@ -155,7 +146,6 @@
             transform: scale(0.95);
         }
 
-        /* 弹窗 */
         .modal {
             position: fixed;
             top: 0;
@@ -169,6 +159,10 @@
             z-index: 100;
         }
 
+        .modal.hidden {
+            display: none !important;
+        }
+
         .modal-content {
             background: linear-gradient(145deg, #fff8e1, #ffecb3);
             padding: 30px;
@@ -177,13 +171,6 @@
             max-width: 90%;
             width: 380px;
             color: #333;
-            animation: popIn 0.4s ease-out;
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0); }
-            70% { transform: scale(1.1); }
-            100% { transform: scale(1); }
         }
 
         .modal h2 {
@@ -215,11 +202,18 @@
             box-shadow: 0 4px 15px rgba(76,175,80,0.4);
         }
 
-        .hidden {
-            display: none !important;
+        .result-text {
+            font-size: 20px;
+            color: rgba(255,255,255,0.8);
+            margin-top: 15px;
+            min-height: 30px;
         }
 
-        /* 成功特效 */
+        .score-up {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
         .success-overlay {
             position: fixed;
             top: 0;
@@ -240,29 +234,9 @@
             0% { opacity: 1; transform: translateY(-20px) rotate(0deg); }
             100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
         }
-
-        .result-text {
-            font-size: 20px;
-            color: rgba(255,255,255,0.8);
-            margin-top: 15px;
-            min-height: 30px;
-        }
-
-        .score-up {
-            color: #4caf50;
-            font-weight: bold;
-            animation: scoreUp 0.5s ease-out;
-        }
-
-        @keyframes scoreUp {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
     </style>
 </head>
 <body>
-    <!-- 教程弹窗 -->
     <div class="modal" id="tutorial">
         <div class="modal-content">
             <h2>🔢 24点挑战</h2>
@@ -281,13 +255,11 @@
         <div class="info-box">得分 <span id="score">0</span></div>
     </div>
 
-    <!-- 扑克牌 -->
     <div class="cards-area" id="cardsArea"></div>
 
     <div class="question-text">哪个算式等于</div>
     <div class="target">24</div>
 
-    <!-- 选项 -->
     <div class="options" id="optionsArea"></div>
 
     <div class="result-text" id="resultText"></div>
@@ -299,390 +271,31 @@
     <div class="success-overlay" id="successOverlay"></div>
 
     <script>
-        // 题库：每题包含4个数字、正确答案、3个干扰项
+        // 题库
         const PUZZLES = [
-            { 
-                nums: [1, 2, 3, 4], 
-                correct: "(1+2+3)×4=24",
-                wrongs: ["1+2+3+4=10", "1×2×3×4=24", "4×3+2+1=15"]
-            },
-            { 
-                nums: [1, 2, 6, 8], 
-                correct: "(6-1-2)×8=24",
-                wrongs: ["6+8+1+2=17", "8×2+6+1=23", "6×2+8+1=21"]
-            },
-            { 
-                nums: [2, 3, 4, 5], 
-                correct: "(5+3-2)×4=24",
-                wrongs: ["5+4+3+2=14", "5×4+3-2=21", "4×3+5+2=19"]
-            },
-            { 
-                nums: [1, 3, 6, 7], 
-                correct: "(7+1)×(6-3)=24",
-                wrongs: ["7+6+3+1=17", "7×3+6-1=26", "6×3+7-1=24"]
-            },
-            { 
-                nums: [1, 4, 5, 6], 
-                correct: "4×(6+5-1)=40... 不对，换：4×5+6-1=25... 不对。真实：(5-1)×6=24=4×... ✓",
-                wrongs: ["..."]
-            },
-            { 
-                nums: [1, 2, 5, 8], 
-                correct: "(5-1)×(8-2)=24",
-                wrongs: ["5+8+2+1=16", "8×2+5+1=22", "5×2+8+1=19"]
-            },
-            { 
-                nums: [2, 4, 4, 6], 
-                correct: "4×4+6+2=24",
-                wrongs: ["4+4+6+2=16", "6×4-4+2=22", "4×6+4-2=26"]
-            },
-            { 
-                nums: [3, 4, 5, 6], 
-                correct: "(5-4+3)×6=24",
-                wrongs: ["5+4+6+3=18", "6×5-4-3=23", "5×4+6-3=23"]
-            },
-            { 
-                nums: [1, 2, 3, 8], 
-                correct: "(8-2)×(3+1)=24",
-                wrongs: ["8+3+2+1=14", "8×3-2+1=23", "3×8+2-1=25"]
-            },
-            { 
-                nums: [1, 3, 3, 5], 
-                correct: "(3+3)×(5-1)=24",
-                wrongs: ["5+3+3+1=12", "5×3+3+1=19", "3×3+5+1=15"]
-            },
-            { 
-                nums: [1, 2, 3, 5], 
-                correct: "(5+3)×(2+1)=24",
-                wrongs: ["5+3+2+1=11", "5×3+2+1=18", "5×2+3+1=14"]
-            },
-            { 
-                nums: [1, 4, 6, 7], 
-                correct: "6×(7-4+1)=24",
-                wrongs: ["7+6+4+1=18", "7×4-6+1=23", "6×4+7-1=30"]
-            },
-            { 
-                nums: [1, 2, 4, 6], 
-                correct: "6×4×1=24... →(6-2)×(4+... 不对。 6×4÷1=24... 但没用2。真实：6×(4+2-... 不对。 (6+2)×(4-1)=24 ✓",
-                wrongs: ["..."]
-            },
-            { 
-                nums: [1, 3, 4, 8], 
-                correct: "(8-4)×(3+1)=24",
-                wrongs: ["8+4+3+1=16", "8×3-4+1=21", "4×3+8+1=21"]
-            },
-            { 
-                nums: [1, 6, 6, 6], 
-                correct: "6×6-6-6=24",
-                wrongs: ["6+6+6+1=19", "6×6+6-1=41", "6+6+6×1=18"]
-            },
-            { 
-                nums: [2, 2, 6, 6], 
-                correct: "(6+6)×2=24... 但没用一个2。真实：6×6-6-6... 不对没有两个6。 (6-2)×6=24=2×... ✓",
-                wrongs: ["..."]
-            },
-            { 
-                nums: [1, 2, 2, 6], 
-                correct: "(6+2)×(2+1)=24",
-                wrongs: ["6+2+2+1=11", "6×2+2+1=15", "6×2×2-1=23"]
-            },
-            { 
-                nums: [2, 3, 3, 8], 
-                correct: "8×(3+3)÷2=24",
-                wrongs: ["8+3+3+2=16", "8×3-3+2=23", "3×3+8+2=19"]
-            },
-            { 
-                nums: [1, 4, 4, 6], 
-                correct: "(6+4-4)×... 不对。 6×4=24=1×... 不对只用3个。 6×4×(4-... 不行。 6×4÷(4÷... 不行。 真实：4×(6+4-... 不对。 (4+4-... 不对。 (6-4+4)×... 不对=6×。 6×(4÷... 不行。 (4÷4+... 不对=1+。 跳过",
-                wrongs: ["..."]
-            },
-            { 
-                nums: [3, 4, 6, 8], 
-                correct: "(8-6+4)×... 不对=6×。 8×3=24=... 只用2个。 8×3×(6-... 不行。 真实：(8-4)×6=24=3×... ✓ → (8-4)×6÷... 不行。 8÷(6-4)×... 不对=4×。 (6-8÷4)×... 不对=(6-2)×=4×。 真实：8×(6-3)-... 不对=24=4+... 不行。 等下 8×(6-3)=8×3=24=4×... 只用3个。 8×3=24 但需要用4个数。 (8×3-6)+... 不对=18+。 8×3+6-... 不对=30。 8×3×6÷6=24 ✓",
-                wrongs: ["..."]
-            }
+            { nums: [1, 2, 3, 4], correct: "(1+2+3)×4=24", wrongs: ["1+2+3+4=10", "1×2×3+4=10", "4×3+2+1=15"] },
+            { nums: [1, 2, 6, 8], correct: "(6-1-2)×8=24", wrongs: ["6+8+1+2=17", "8×2+6+1=23", "6×2+8+1=21"] },
+            { nums: [2, 3, 4, 5], correct: "(5+3-2)×4=24", wrongs: ["5+4+3+2=14", "5×4+3-2=21", "4×3+5+2=19"] },
+            { nums: [1, 3, 6, 7], correct: "(7+1)×(6-3)=24", wrongs: ["7+6+3+1=17", "7×3+6-1=26", "6×3+7+1=26"] },
+            { nums: [1, 2, 5, 8], correct: "(5-1)×(8-2)=24", wrongs: ["5+8+2+1=16", "8×2+5+1=22", "5×2+8+1=19"] },
+            { nums: [2, 4, 4, 6], correct: "4×4+6+2=24", wrongs: ["4+4+6+2=16", "6×4-4+2=22", "4×6+4-2=26"] },
+            { nums: [3, 4, 5, 6], correct: "(5-4+3)×6=24", wrongs: ["5+4+6+3=18", "6×5-4-3=23", "5×4+6-3=23"] },
+            { nums: [1, 2, 3, 8], correct: "(8-2)×(3+1)=24", wrongs: ["8+3+2+1=14", "8×3-2+1=23", "3×8+2-1=25"] },
+            { nums: [1, 3, 3, 5], correct: "(3+3)×(5-1)=24", wrongs: ["5+3+3+1=12", "5×3+3+1=19", "3×3+5+1=15"] },
+            { nums: [1, 2, 3, 5], correct: "(5+3)×(2+1)=24", wrongs: ["5+3+2+1=11", "5×3+2+1=18", "5×2+3+1=14"] },
+            { nums: [1, 4, 6, 7], correct: "6×(7-4+1)=24", wrongs: ["7+6+4+1=18", "7×4-6+1=23", "6×4-7+1=18"] },
+            { nums: [1, 3, 4, 8], correct: "(8-4)×(3+1)=24", wrongs: ["8+4+3+1=16", "8×3-4+1=21", "4×3+8+1=21"] },
+            { nums: [1, 2, 2, 6], correct: "(6+2)×(2+1)=24", wrongs: ["6+2+2+1=11", "6×2+2+1=15", "6×2×2-1=23"] },
+            { nums: [2, 3, 3, 8], correct: "8×(3+3)÷2=24", wrongs: ["8+3+3+2=16", "8×3-3+2=23", "3×3+8+2=19"] },
+            { nums: [1, 1, 3, 8], correct: "8×3×1×1=24", wrongs: ["8+3+1+1=13", "8×3+1+1=26", "8×3-1-1=22"] },
+            { nums: [2, 2, 8, 9], correct: "9×2+8-2=24", wrongs: ["9+8+2+2=21", "9×2+8+2=28", "8×2+9-2=23"] }
         ];
 
-        // 清理后的题库
-        const CLEAN_PUZZLES = [
-            { 
-                nums: [1, 2, 3, 4], 
-                correct: "(1+2+3)×4=24",
-                wrongs: ["1+2+3+4=10", "1×2×3+4=10", "4×3+2+1=15"]
-            },
-            { 
-                nums: [1, 2, 6, 8], 
-                correct: "(6-1-2)×8=24",
-                wrongs: ["6+8+1+2=17", "8×2+6+1=23", "6×2+8+1=21"]
-            },
-            { 
-                nums: [2, 3, 4, 5], 
-                correct: "(5+3-2)×4=24",
-                wrongs: ["5+4+3+2=14", "5×4+3-2=21", "4×3+5+2=19"]
-            },
-            { 
-                nums: [1, 3, 6, 7], 
-                correct: "(7+1)×(6-3)=24",
-                wrongs: ["7+6+3+1=17", "7×3+6-1=26", "6×3+7+1=26"]
-            },
-            { 
-                nums: [1, 2, 5, 8], 
-                correct: "(5-1)×(8-2)=24",
-                wrongs: ["5+8+2+1=16", "8×2+5+1=22", "5×2+8+1=19"]
-            },
-            { 
-                nums: [2, 4, 4, 6], 
-                correct: "4×4+6+2=24",
-                wrongs: ["4+4+6+2=16", "6×4-4+2=22", "4×6+4-2=26"]
-            },
-            { 
-                nums: [3, 4, 5, 6], 
-                correct: "(5-4+3)×6=24",
-                wrongs: ["5+4+6+3=18", "6×5-4-3=23", "5×4+6-3=23"]
-            },
-            { 
-                nums: [1, 2, 3, 8], 
-                correct: "(8-2)×(3+1)=24",
-                wrongs: ["8+3+2+1=14", "8×3-2+1=23", "3×8+2-1=25"]
-            },
-            { 
-                nums: [1, 3, 3, 5], 
-                correct: "(3+3)×(5-1)=24",
-                wrongs: ["5+3+3+1=12", "5×3+3+1=19", "3×3+5+1=15"]
-            },
-            { 
-                nums: [1, 2, 3, 5], 
-                correct: "(5+3)×(2+1)=24",
-                wrongs: ["5+3+2+1=11", "5×3+2+1=18", "5×2+3+1=14"]
-            },
-            { 
-                nums: [1, 4, 6, 7], 
-                correct: "6×(7-4+1)=24",
-                wrongs: ["7+6+4+1=18", "7×4-6+1=23", "6×4-7+1=18"]
-            },
-            { 
-                nums: [1, 3, 4, 8], 
-                correct: "(8-4)×(3+1)=24",
-                wrongs: ["8+4+3+1=16", "8×3-4+1=21", "4×3+8+1=21"]
-            },
-            { 
-                nums: [1, 6, 6, 6], 
-                correct: "6×6-6-6=24",
-                wrongs: ["6+6+6+1=19", "6×6-6+1=31", "6+6+6×1=18"]
-            },
-            { 
-                nums: [1, 2, 2, 6], 
-                correct: "(6+2)×(2+1)=24",
-                wrongs: ["6+2+2+1=11", "6×2+2+1=15", "6×2×2-1=23"]
-            },
-            { 
-                nums: [2, 3, 3, 8], 
-                correct: "8×(3+3)÷2=24",
-                wrongs: ["8+3+3+2=16", "8×3-3+2=23", "3×3+8+2=19"]
-            },
-            { 
-                nums: [1, 5, 5, 5], 
-                correct: "(5-1÷5)×5=24",
-                wrongs: ["5+5+5+1=16", "5×5-5+1=21", "5×5+5-1=29"]
-            },
-            { 
-                nums: [3, 3, 8, 8], 
-                correct: "8÷(3-8÷3)=24",
-                wrongs: ["8+8+3+3=22", "8×3-8+3=19", "8×8-3×3=55"]
-            },
-            { 
-                nums: [1, 4, 5, 6], 
-                correct: "(5-1)×6=24=4×... → 4×(6+5-... 不对。 真实：4×(6-1+... 不对。 (6-1-... 不对。 好像要：(5+1)×4=24=6×... ✓ → (5+1)×4=24 但没用6... 等等有6！ (5+1)×4=24=6*4=24 ✓ 但(5+1)不等于6... 哦 5+1=6, 6×4=24 ✓ 所以 (5+1)×4 对了但要用到所有数... 题目是1,4,5,6。 (5+1)×4=24 用了5,1,4但没用6。除非 (5+1)=6 然后 6×4=24? 但这样用了两次6... 不对。真实答案应该是：6÷(1-5÷6)... 复杂。 或 4×6×(5-... 不行。 4×6=24=... 只用2个。 4×6÷(... 不行。 4×6+5-... 不对=29。 4×6-5-1=18 不对。 跳过这题",
-                wrongs: ["..."]
-            }
-        ];
-
-        // 最终精简版
-        const FINAL_PUZZLES = [
-            { 
-                nums: [1, 2, 3, 4], 
-                correct: "(1+2+3)×4=24",
-                wrongs: ["1+2+3+4=10", "1×2×3+4=10", "4×3+2+1=15"]
-            },
-            { 
-                nums: [1, 2, 6, 8], 
-                correct: "(6-1-2)×8=24",
-                wrongs: ["6+8+1+2=17", "8×2+6+1=23", "6×2+8+1=21"]
-            },
-            { 
-                nums: [2, 3, 4, 5], 
-                correct: "(5+3-2)×4=24",
-                wrongs: ["5+4+3+2=14", "5×4+3-2=21", "4×3+5+2=19"]
-            },
-            { 
-                nums: [1, 3, 6, 7], 
-                correct: "(7+1)×(6-3)=24",
-                wrongs: ["7+6+3+1=17", "7×3+6-1=26", "6×3+7+1=26"]
-            },
-            { 
-                nums: [1, 2, 5, 8], 
-                correct: "(5-1)×(8-2)=24",
-                wrongs: ["5+8+2+1=16", "8×2+5+1=22", "5×2+8+1=19"]
-            },
-            { 
-                nums: [2, 4, 4, 6], 
-                correct: "4×4+6+2=24",
-                wrongs: ["4+4+6+2=16", "6×4-4+2=22", "4×6+4-2=26"]
-            },
-            { 
-                nums: [3, 4, 5, 6], 
-                correct: "(5-4+3)×6=24",
-                wrongs: ["5+4+6+3=18", "6×5-4-3=23", "5×4+6-3=23"]
-            },
-            { 
-                nums: [1, 2, 3, 8], 
-                correct: "(8-2)×(3+1)=24",
-                wrongs: ["8+3+2+1=14", "8×3-2+1=23", "3×8+2-1=25"]
-            },
-            { 
-                nums: [1, 3, 3, 5], 
-                correct: "(3+3)×(5-1)=24",
-                wrongs: ["5+3+3+1=12", "5×3+3+1=19", "3×3+5+1=15"]
-            },
-            { 
-                nums: [1, 2, 3, 5], 
-                correct: "(5+3)×(2+1)=24",
-                wrongs: ["5+3+2+1=11", "5×3+2+1=18", "5×2+3+1=14"]
-            },
-            { 
-                nums: [1, 4, 6, 7], 
-                correct: "6×(7-4+1)=24",
-                wrongs: ["7+6+4+1=18", "7×4-6+1=23", "6×4-7+1=18"]
-            },
-            { 
-                nums: [1, 3, 4, 8], 
-                correct: "(8-4)×(3+1)=24",
-                wrongs: ["8+4+3+1=16", "8×3-4+1=21", "4×3+8+1=21"]
-            },
-            { 
-                nums: [1, 2, 2, 6], 
-                correct: "(6+2)×(2+1)=24",
-                wrongs: ["6+2+2+1=11", "6×2+2+1=15", "6×2×2-1=23"]
-            },
-            { 
-                nums: [2, 3, 3, 8], 
-                correct: "8×(3+3)÷2=24",
-                wrongs: ["8+3+3+2=16", "8×3-3+2=23", "3×3+8+2=19"]
-            },
-            { 
-                nums: [2, 2, 2, 3], 
-                correct: "(2+2+2)×... 不对=6×。 2×2×... 不对=4×。 (3+2+... 不对。 3×2×2+... 不对=12+。 好像无解... 跳过",
-                wrongs: ["..."]
-            },
-            { 
-                nums: [1, 1, 8, 3], 
-                correct: "8×3×1×1=24",
-                wrongs: ["8+3+1+1=13", "8×3+1+1=26", "8×3-1-1=22"]
-            },
-            { 
-                nums: [2, 2, 8, 9], 
-                correct: "9×2+8-2=24",
-                wrongs: ["9+8+2+2=21", "9×2+8+2=28", "8×2+9-2=23"]
-            },
-            { 
-                nums: [1, 2, 4, 12], 
-                correct: "12×2×(4-... 不对。 12×2=24=... 只用2个。 12×2÷(4-... 不行。 12×2+4-... 不对=28。 12×2-4+... 不对=20。 12÷(4-... 复杂。 真实：12×(4-2)÷1=24 ✓",
-                wrongs: ["..."]
-            }
-        ];
-
-        // 超级精简版 - 全部验证过的
-        const PUZZLES = [
-            { 
-                nums: [1, 2, 3, 4], 
-                correct: "(1+2+3)×4=24",
-                wrongs: ["1+2+3+4=10", "1×2×3+4=10", "4×3+2+1=15"]
-            },
-            { 
-                nums: [1, 2, 6, 8], 
-                correct: "(6-1-2)×8=24",
-                wrongs: ["6+8+1+2=17", "8×2+6+1=23", "6×2+8+1=21"]
-            },
-            { 
-                nums: [2, 3, 4, 5], 
-                correct: "(5+3-2)×4=24",
-                wrongs: ["5+4+3+2=14", "5×4+3-2=21", "4×3+5+2=19"]
-            },
-            { 
-                nums: [1, 3, 6, 7], 
-                correct: "(7+1)×(6-3)=24",
-                wrongs: ["7+6+3+1=17", "7×3+6-1=26", "6×3+7+1=26"]
-            },
-            { 
-                nums: [1, 2, 5, 8], 
-                correct: "(5-1)×(8-2)=24",
-                wrongs: ["5+8+2+1=16", "8×2+5+1=22", "5×2+8+1=19"]
-            },
-            { 
-                nums: [2, 4, 4, 6], 
-                correct: "4×4+6+2=24",
-                wrongs: ["4+4+6+2=16", "6×4-4+2=22", "4×6+4-2=26"]
-            },
-            { 
-                nums: [3, 4, 5, 6], 
-                correct: "(5-4+3)×6=24",
-                wrongs: ["5+4+6+3=18", "6×5-4-3=23", "5×4+6-3=23"]
-            },
-            { 
-                nums: [1, 2, 3, 8], 
-                correct: "(8-2)×(3+1)=24",
-                wrongs: ["8+3+2+1=14", "8×3-2+1=23", "3×8+2-1=25"]
-            },
-            { 
-                nums: [1, 3, 3, 5], 
-                correct: "(3+3)×(5-1)=24",
-                wrongs: ["5+3+3+1=12", "5×3+3+1=19", "3×3+5+1=15"]
-            },
-            { 
-                nums: [1, 2, 3, 5], 
-                correct: "(5+3)×(2+1)=24",
-                wrongs: ["5+3+2+1=11", "5×3+2+1=18", "5×2+3+1=14"]
-            },
-            { 
-                nums: [1, 4, 6, 7], 
-                correct: "6×(7-4+1)=24",
-                wrongs: ["7+6+4+1=18", "7×4-6+1=23", "6×4-7+1=18"]
-            },
-            { 
-                nums: [1, 3, 4, 8], 
-                correct: "(8-4)×(3+1)=24",
-                wrongs: ["8+4+3+1=16", "8×3-4+1=21", "4×3+8+1=21"]
-            },
-            { 
-                nums: [1, 2, 2, 6], 
-                correct: "(6+2)×(2+1)=24",
-                wrongs: ["6+2+2+1=11", "6×2+2+1=15", "6×2×2-1=23"]
-            },
-            { 
-                nums: [2, 3, 3, 8], 
-                correct: "8×(3+3)÷2=24",
-                wrongs: ["8+3+3+2=16", "8×3-3+2=23", "3×3+8+2=19"]
-            },
-            { 
-                nums: [1, 1, 3, 8], 
-                correct: "8×3×1×1=24",
-                wrongs: ["8+3+1+1=13", "8×3+1+1=26", "8×3-1-1=22"]
-            },
-            { 
-                nums: [2, 2, 8, 9], 
-                correct: "9×2+8-2=24",
-                wrongs: ["9+8+2+2=21", "9×2+8+2=28", "8×2+9-2=23"]
-            }
-        ];
-
-        // 游戏状态
         let level = 0;
         let score = 0;
         let currentPuzzle = null;
         let answered = false;
         let usedPuzzles = [];
-
-        // 音效
         let audioCtx = null;
 
         function initAudio() {
@@ -692,22 +305,9 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        function playClickSound() {
+        function playSound(freqs) {
             if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.08);
-        }
-
-        function playCorrectSound() {
-            if (!audioCtx) return;
-            [523, 659, 784].forEach((freq, i) => {
+            freqs.forEach((freq, i) => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain);
@@ -720,21 +320,6 @@
             });
         }
 
-        function playWrongSound() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.2);
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.2);
-        }
-
-        // 加载题目
         function loadQuestion() {
             answered = false;
             level++;
@@ -742,31 +327,25 @@
             document.getElementById('nextBtn').style.display = 'none';
             document.getElementById('resultText').textContent = '';
 
-            // 选一题（避免重复）
-            let availablePuzzles = PUZZLES.filter((_, i) => !usedPuzzles.includes(i));
-            if (availablePuzzles.length === 0) {
+            let available = PUZZLES.filter((_, i) => !usedPuzzles.includes(i));
+            if (available.length === 0) {
                 usedPuzzles = [];
-                availablePuzzles = PUZZLES;
+                available = PUZZLES;
             }
-            const puzzleIndex = PUZZLES.indexOf(availablePuzzles[Math.floor(Math.random() * availablePuzzles.length)]);
-            usedPuzzles.push(puzzleIndex);
-            currentPuzzle = PUZZLES[puzzleIndex];
+            const idx = PUZZLES.indexOf(available[Math.floor(Math.random() * available.length)]);
+            usedPuzzles.push(idx);
+            currentPuzzle = PUZZLES[idx];
 
-            // 显示卡牌
             const cardsArea = document.getElementById('cardsArea');
             cardsArea.innerHTML = '';
-            const shuffledNums = [...currentPuzzle.nums].sort(() => 0.5 - Math.random());
-            shuffledNums.forEach(num => {
+            [...currentPuzzle.nums].sort(() => 0.5 - Math.random()).forEach(num => {
                 const card = document.createElement('div');
                 card.className = 'card' + (Math.random() > 0.5 ? ' black' : '');
                 card.textContent = num;
                 cardsArea.appendChild(card);
             });
 
-            // 生成选项（1个正确 + 3个错误）
-            const options = [currentPuzzle.correct, ...currentPuzzle.wrongs];
-            options.sort(() => 0.5 - Math.random());
-
+            const options = [currentPuzzle.correct, ...currentPuzzle.wrongs].sort(() => 0.5 - Math.random());
             const optionsArea = document.getElementById('optionsArea');
             optionsArea.innerHTML = '';
             options.forEach(opt => {
@@ -778,47 +357,36 @@
             });
         }
 
-        // 检查答案
         function checkAnswer(btn, answer) {
             if (answered) return;
             answered = true;
-
             initAudio();
-            playClickSound();
 
             const buttons = document.querySelectorAll('.option-btn');
             buttons.forEach(b => b.style.pointerEvents = 'none');
 
             if (answer === currentPuzzle.correct) {
-                // 答对了！
                 btn.classList.add('correct');
-                playCorrectSound();
+                playSound([523, 659, 784]);
                 score += 10;
                 document.getElementById('score').textContent = score;
                 document.getElementById('resultText').innerHTML = '<span class="score-up">+10分 太棒了！</span>';
                 showConfetti();
             } else {
-                // 答错了
                 btn.classList.add('wrong');
-                playWrongSound();
-                // 显示正确答案
+                playSound([200]);
                 buttons.forEach(b => {
-                    if (b.textContent === currentPuzzle.correct) {
-                        b.classList.add('correct');
-                    }
+                    if (b.textContent === currentPuzzle.correct) b.classList.add('correct');
                 });
                 document.getElementById('resultText').textContent = '正确答案已标绿';
             }
-
             document.getElementById('nextBtn').style.display = 'inline-block';
         }
 
-        // 下一题
         function nextQuestion() {
             loadQuestion();
         }
 
-        // 撒花
         function showConfetti() {
             const overlay = document.getElementById('successOverlay');
             const emojis = ['🎉', '🎊', '✨', '🌟', '💯'];
@@ -833,21 +401,15 @@
             setTimeout(() => overlay.innerHTML = '', 2500);
         }
 
-        // 开始游戏
         function startGame() {
-            const tutorial = document.getElementById('tutorial');
-            tutorial.style.display = 'none'; // 直接设置display:none
-            tutorial.classList.add('hidden');
+            document.getElementById('tutorial').classList.add('hidden');
             initAudio();
-            // 重置状态
             level = 0;
             score = 0;
             usedPuzzles = [];
             document.getElementById('score').textContent = score;
             loadQuestion();
         }
-
-        // 初始化（不自动加载题目，等用户点击开始）
     </script>
 </body>
 </html>
