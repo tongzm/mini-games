@@ -837,11 +837,15 @@
         function startGame() {
             document.getElementById('tutorial').classList.add('hidden');
             initAudio();
+            // 重置状态
+            level = 0;
+            score = 0;
+            usedPuzzles = [];
+            document.getElementById('score').textContent = score;
             loadQuestion();
         }
 
-        // 初始化
-        loadQuestion();
+        // 初始化（不自动加载题目，等用户点击开始）
     </script>
 </body>
 </html>
