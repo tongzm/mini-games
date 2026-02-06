@@ -835,7 +835,9 @@
 
         // 开始游戏
         function startGame() {
-            document.getElementById('tutorial').classList.add('hidden');
+            const tutorial = document.getElementById('tutorial');
+            tutorial.style.display = 'none'; // 直接设置display:none
+            tutorial.classList.add('hidden');
             initAudio();
             // 重置状态
             level = 0;
