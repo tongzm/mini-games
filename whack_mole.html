@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐹 打地鼠</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #2d5016 0%, #4a7c23 50%, #2d5016 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 42px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+            margin: 10px 0;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            margin: 10px 0 15px 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(145deg, #ffd700, #ffb300);
+            padding: 12px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 18px;
+            color: #8b4513;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #d32f2f;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 450px;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(145deg, #8b5a2b, #654321);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 2px 10px rgba(255,255,255,0.1);
+        }
+
+        .hole {
+            aspect-ratio: 1;
+            background: radial-gradient(ellipse at center, #1a1a1a 0%, #3d2817 70%, #654321 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 8px 20px rgba(0,0,0,0.8);
+            transition: transform 0.1s;
+        }
+
+        .hole:active {
+            transform: scale(0.95);
+        }
+
+        .mole {
+            font-size: 60px;
+            position: absolute;
+            bottom: -100%;
+            transition: bottom 0.15s ease-out;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+            animation: wiggle 0.3s ease-in-out infinite;
+        }
+
+        .mole.show {
+            bottom: 5%;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        .mole.hit {
+            animation: hitAnim 0.3s ease-out forwards;
+        }
+
+        @keyframes hitAnim {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3) rotate(15deg); }
+            100% { transform: scale(0) rotate(30deg); bottom: -100%; }
+        }
+
+        .hit-effect {
+            position: absolute;
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 18px 50px;
+            font-size: 28px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-start {
+            background: linear-gradient(145deg, #ff6b6b, #d32f2f);
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: linear-gradient(145deg, #ff8a8a, #e53935);
+            transform: translateY(-2px);
+        }
+
+        .btn-start:active {
+            transform: translateY(2px);
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.15);
+            padding: 12px 20px;
+            border-radius: 15px;
+        }
+
+        .speed-label {
+            color: white;
+            font-size: 22px;
+        }
+
+        .speed-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .speed-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid white;
+            background: transparent;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .speed-btn.active {
+            background: #ffd700;
+            color: #333;
+            border-color: #ffd700;
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #ff6b6b, #d32f2f);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 100;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+            animation: popIn 0.4s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            70% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .timer-bar {
+            width: 100%;
+            max-width: 400px;
+            height: 20px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        .timer-fill.warning {
+            background: linear-gradient(90deg, #ff9800, #ffc107);
+        }
+
+        .timer-fill.danger {
+            background: linear-gradient(90deg, #f44336, #ff5722);
+        }
+
+        /* 新手引导弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #fff8e1, #ffecb3);
+            padding: 30px;
+            border-radius: 25px;
+            max-width: 90%;
+            width: 380px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+        }
+
+        .modal h2 {
+            color: #d32f2f;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .modal p {
+            color: #5d4037;
+            font-size: 22px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .modal .emoji-demo {
+            font-size: 64px;
+            margin: 15px 0;
+        }
+
+        .modal .btn-got-it {
+            background: linear-gradient(145deg, #4caf50, #388e3c);
+            color: white;
+            padding: 15px 40px;
+            font-size: 26px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .praise {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            pointer-events: none;
+            animation: praiseAnim 1s ease-out forwards;
+            z-index: 50;
+        }
+
+        @keyframes praiseAnim {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
+            20% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-50px); }
+        }
+
+        .combo {
+            color: #ff6b6b;
+            font-size: 24px;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 新手引导 -->
+    <div class="modal-overlay" id="tutorial">
+        <div class="modal">
+            <h2>🐹 打地鼠</h2>
+            <div class="emoji-demo">🐹👆</div>
+            <p>地鼠冒头就<b>点它</b>！</p>
+            <p>打中一只得 <b>10分</b></p>
+            <p>连续打中有<b>连击加分</b>哦～</p>
+            <p style="color:#4caf50;">🏆 看看60秒能得多少分！</p>
+            <button class="btn-got-it" onclick="closeTutorial()">明白了，开始！</button>
+        </div>
+    </div>
+
+    <h1>🐹 打地鼠</h1>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-label">得分</div>
+            <div class="stat-value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">时间</div>
+            <div class="stat-value" id="time">60</div>
+        </div>
+    </div>
+
+    <div class="timer-bar">
+        <div class="timer-fill" id="timerFill"></div>
+    </div>
+
+    <div class="game-board" id="gameBoard">
+        <!-- 9个洞 -->
+    </div>
+
+    <div class="controls">
+        <div class="speed-control">
+            <span class="speed-label">速度：</span>
+            <div class="speed-btns">
+                <button class="speed-btn active" data-speed="slow">慢</button>
+                <button class="speed-btn" data-speed="medium">中</button>
+                <button class="speed-btn" data-speed="fast">快</button>
+            </div>
+        </div>
+        <button class="btn btn-start" id="startBtn" onclick="startGame()">开始游戏</button>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+        // 游戏状态
+        let score = 0;
+        let timeLeft = 60;
+        let gameRunning = false;
+        let gameTimer = null;
+        let moleTimer = null;
+        let moleHideTimers = []; // 保存所有隐藏计时器
+        let combo = 0;
+        let lastHoleIndex = -1;
+
+        // 速度设置 (地鼠停留时间)
+        const speeds = {
+            slow: { stay: 1500, interval: 1200 },
+            medium: { stay: 1000, interval: 900 },
+            fast: { stay: 700, interval: 600 }
+        };
+        let currentSpeed = 'slow';
+
+        // 地鼠表情
+        const moleEmojis = ['🐹', '🐭', '🐀'];
+        const hitPraises = ['好棒！', '太厉害了！', '神速！', '真准！', '继续加油！', '666！'];
+
+        // 初始化游戏板
+        function initBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const hole = document.createElement('div');
+                hole.className = 'hole';
+                hole.dataset.index = i;
+                hole.innerHTML = `<div class="mole" id="mole${i}">🐹</div>`;
+                hole.onclick = () => whackMole(i);
+                board.appendChild(hole);
+            }
+        }
+
+        // 关闭教程
+        function closeTutorial() {
+            document.getElementById('tutorial').classList.add('hidden');
+        }
+
+        // 速度选择
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.onclick = () => {
+                if (gameRunning) return;
+                document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSpeed = btn.dataset.speed;
+            };
+        });
+
+        // 开始游戏
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            score = 0;
+            timeLeft = 60;
+            combo = 0;
+            updateDisplay();
+            
+            document.getElementById('startBtn').textContent = '游戏中...';
+            document.getElementById('startBtn').style.opacity = '0.6';
+            
+            // 倒计时
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                updateTimerBar();
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+            
+            // 开始出地鼠
+            spawnMole();
+        }
+
+        // 出地鼠
+        function spawnMole() {
+            if (!gameRunning) return;
+            
+            // 随机选一个洞（避免连续同一个）
+            let holeIndex;
+            let attempts = 0;
+            do {
+                holeIndex = Math.floor(Math.random() * 9);
+                attempts++;
+            } while (holeIndex === lastHoleIndex && attempts < 10);
+            lastHoleIndex = holeIndex;
+            
+            const mole = document.getElementById(`mole${holeIndex}`);
+            mole.textContent = moleEmojis[Math.floor(Math.random() * moleEmojis.length)];
+            mole.classList.remove('hit');
+            mole.classList.add('show');
+            
+            // 停留时间后消失
+            const speed = speeds[currentSpeed];
+            const hideTimer = setTimeout(() => {
+                if (mole.classList.contains('show') && !mole.classList.contains('hit')) {
+                    mole.classList.remove('show');
+                    combo = 0; // 漏掉了，连击中断
+                }
+            }, speed.stay);
+            moleHideTimers.push(hideTimer);
+            
+            // 下一只
+            moleTimer = setTimeout(spawnMole, speed.interval);
+        }
+
+        // 打地鼠
+        function whackMole(index) {
+            if (!gameRunning) return;
+            
+            const mole = document.getElementById(`mole${index}`);
+            if (!mole.classList.contains('show') || mole.classList.contains('hit')) {
+                return; // 没冒头或已经被打
+            }
+            
+            // 打中了！
+            mole.classList.remove('show'); // 立即移除，防止快速点击重复判定
+            mole.classList.add('hit');
+            combo++;
+            
+            // 计算分数（连击加分）
+            let points = 10;
+            if (combo >= 3) points = 15;
+            if (combo >= 5) points = 20;
+            if (combo >= 10) points = 30;
+            
+            score += points;
+            updateDisplay();
+            
+            // 显示+分
+            showHitEffect(mole.parentElement, points);
+            
+            // 手机振动反馈
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+            
+            // 连击提示
+            if (combo >= 3) {
+                showPraise(`${combo}连击！`);
+            } else if (Math.random() < 0.3) {
+                showPraise(hitPraises[Math.floor(Math.random() * hitPraises.length)]);
+            }
+            
+            // 动画后隐藏
+            setTimeout(() => {
+                mole.classList.remove('show');
+                mole.classList.remove('hit');
+            }, 300);
+        }
+
+        // 显示+分效果
+        function showHitEffect(hole, points) {
+            const effect = document.createElement('div');
+            effect.className = 'hit-effect';
+            effect.textContent = `+${points}`;
+            hole.appendChild(effect);
+            setTimeout(() => effect.remove(), 800);
+        }
+
+        // 显示表扬
+        function showPraise(text) {
+            const praise = document.createElement('div');
+            praise.className = 'praise';
+            praise.textContent = text;
+            document.body.appendChild(praise);
+            setTimeout(() => praise.remove(), 1000);
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('time').textContent = timeLeft;
+        }
+
+        // 更新时间条
+        function updateTimerBar() {
+            const fill = document.getElementById('timerFill');
+            const percent = (timeLeft / 60) * 100;
+            fill.style.width = percent + '%';
+            
+            fill.classList.remove('warning', 'danger');
+            if (percent <= 20) {
+                fill.classList.add('danger');
+            } else if (percent <= 40) {
+                fill.classList.add('warning');
+            }
+        }
+
+        // 结束游戏
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameTimer);
+            clearTimeout(moleTimer);
+            
+            // 清理所有隐藏计时器
+            moleHideTimers.forEach(t => clearTimeout(t));
+            moleHideTimers = [];
+            
+            // 隐藏所有地鼠
+            document.querySelectorAll('.mole').forEach(m => {
+                m.classList.remove('show');
+            });
+            
+            // 显示结果
+            let msg = '';
+            if (score >= 500) {
+                msg = `🏆 太厉害了！\n得分：${score}\n您是"打地鼠大师"！`;
+            } else if (score >= 300) {
+                msg = `🎉 真棒！\n得分：${score}\n反应超快！`;
+            } else if (score >= 150) {
+                msg = `👍 不错！\n得分：${score}\n继续加油哦～`;
+            } else {
+                msg = `😊 完成了！\n得分：${score}\n多练练会更好！`;
+            }
+            
+            showMessage(msg);
+            
+            document.getElementById('startBtn').textContent = '再来一局';
+            document.getElementById('startBtn').style.opacity = '1';
+        }
+
+        // 显示消息
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.innerHTML = text.replace(/\n/g, '<br>');
+            msg.classList.add('show');
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+
+        // 初始化
+        initBoard();
+        updateTimerBar();
+    </script>
+</body>
+</html>
