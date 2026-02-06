@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐦 乌鸦喝水</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(180deg, #87CEEB 0%, #98D8C8 50%, #7CB342 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #2E7D32;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+        }
+
+        .game-info {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            color: #1B5E20;
+        }
+
+        .info-box {
+            background: rgba(255,255,255,0.8);
+            padding: 8px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .game-scene {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 450px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        /* 乌鸦 */
+        .crow {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 80px;
+            z-index: 10;
+            transition: all 0.5s ease;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+        }
+
+        .crow.drinking {
+            top: 80px;
+            animation: drinkAnim 0.5s ease-in-out infinite;
+        }
+
+        @keyframes drinkAnim {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            50% { transform: translateX(-50%) rotate(10deg); }
+        }
+
+        /* 水瓶 */
+        .bottle {
+            position: relative;
+            width: 120px;
+            height: 280px;
+            background: linear-gradient(90deg, 
+                rgba(200,230,255,0.3) 0%, 
+                rgba(255,255,255,0.5) 30%,
+                rgba(200,230,255,0.3) 100%);
+            border: 4px solid rgba(100,150,200,0.6);
+            border-radius: 20px 20px 40px 40px;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.5), 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* 瓶口 */
+        .bottle::before {
+            content: '';
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 30px;
+            background: linear-gradient(90deg, 
+                rgba(200,230,255,0.4) 0%, 
+                rgba(255,255,255,0.6) 50%,
+                rgba(200,230,255,0.4) 100%);
+            border: 4px solid rgba(100,150,200,0.6);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+        }
+
+        /* 水 */
+        .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20%;
+            background: linear-gradient(180deg, #4FC3F7 0%, #0288D1 100%);
+            transition: height 0.5s ease;
+            border-radius: 0 0 36px 36px;
+        }
+
+        .water::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 15px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        /* 石子区域 */
+        .stones-area {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            max-width: 380px;
+        }
+
+        .stone {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #9E9E9E, #616161);
+            border-radius: 50% 40% 50% 40%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.3), inset -2px -2px 5px rgba(0,0,0,0.2);
+            transition: all 0.15s;
+            animation: stoneBounce 2s ease-in-out infinite;
+        }
+
+        .stone:nth-child(odd) {
+            animation-delay: 0.5s;
+        }
+
+        @keyframes stoneBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .stone:hover {
+            transform: scale(1.1);
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .stone:active {
+            transform: scale(0.95);
+        }
+
+        .stone.used {
+            opacity: 0.3;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        /* 落入动画的石子 */
+        .falling-stone {
+            position: absolute;
+            font-size: 40px;
+            z-index: 20;
+            pointer-events: none;
+            animation: fallIntoBottle 0.8s ease-in forwards;
+        }
+
+        @keyframes fallIntoBottle {
+            0% { 
+                opacity: 1;
+                transform: translateY(0) rotate(0deg); 
+            }
+            70% { 
+                opacity: 1;
+                transform: translateY(200px) rotate(180deg); 
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(250px) rotate(360deg); 
+            }
+        }
+
+        /* 瓶中石子 */
+        .bottle-stones {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 90%;
+            z-index: 5;
+        }
+
+        .bottle-stone {
+            font-size: 22px;
+            margin: 2px;
+            animation: settleStone 0.3s ease-out;
+        }
+
+        @keyframes settleStone {
+            0% { transform: translateY(-20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* 消息弹窗 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, #FFF8E1, #FFECB3);
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            max-width: 90%;
+            width: 350px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            animation: popIn 0.4s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .modal h2 {
+            color: #E65100;
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .modal p {
+            color: #5D4037;
+            font-size: 22px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .modal .emoji-big {
+            font-size: 80px;
+            margin: 15px 0;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #4CAF50, #388E3C);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76,175,80,0.4);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 成功特效 */
+        .success-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .confetti {
+            position: absolute;
+            font-size: 30px;
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { 
+                opacity: 1;
+                transform: translateY(-20px) rotate(0deg); 
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(100vh) rotate(720deg); 
+            }
+        }
+
+        .tip-text {
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 20px;
+            color: #1B5E20;
+            margin-top: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- 教程弹窗 -->
+    <div class="modal" id="tutorial">
+        <div class="modal-content">
+            <h2>🐦 乌鸦喝水</h2>
+            <div class="emoji-big">🐦💧</div>
+            <p>乌鸦口渴了，但水太少够不着！</p>
+            <p>👉 点击<b>石子</b>扔进瓶子</p>
+            <p>💧 水位上升，乌鸦就能喝到水啦！</p>
+            <button class="btn btn-primary" onclick="startGame()">开始帮忙！</button>
+        </div>
+    </div>
+
+    <!-- 成功弹窗 -->
+    <div class="modal hidden" id="successModal">
+        <div class="modal-content">
+            <h2>🎉 太棒了！</h2>
+            <div class="emoji-big">🐦💦</div>
+            <p>乌鸦喝到水啦！</p>
+            <p id="successMsg">您用了 <b><span id="stoneCount">0</span></b> 颗石子</p>
+            <p style="color:#4CAF50;">遇到困难要动脑筋哦～</p>
+            <button class="btn btn-primary" onclick="restartGame()">再玩一次</button>
+        </div>
+    </div>
+
+    <h1>🐦 乌鸦喝水</h1>
+
+    <div class="game-info">
+        <div class="info-box">石子：<span id="stonesLeft">8</span> 颗</div>
+        <div class="info-box">水位：<span id="waterLevel">20</span>%</div>
+    </div>
+
+    <div class="game-scene" id="gameScene">
+        <div class="crow" id="crow">🐦</div>
+        <div class="bottle" id="bottle">
+            <div class="water" id="water"></div>
+            <div class="bottle-stones" id="bottleStones"></div>
+        </div>
+    </div>
+
+    <div class="tip-text">👆 点击下面的石子扔进瓶子里</div>
+
+    <div class="stones-area" id="stonesArea">
+        <!-- 石子会在这里生成 -->
+    </div>
+
+    <div class="success-effect" id="successEffect"></div>
+
+    <script>
+        // 游戏状态
+        const TOTAL_STONES = 8;
+        const WATER_PER_STONE = 10; // 每颗石子水位上升10%
+        const WIN_WATER_LEVEL = 90; // 水位达到90%就赢了
+        
+        let stonesUsed = 0;
+        let waterLevel = 20; // 初始水位20%
+        let gameWon = false;
+
+        // 音效系统
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 石子落水音效
+        function playPlunkSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        // 水位上升音效
+        function playWaterRiseSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.4);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        // 胜利音效
+        function playVictorySound() {
+            if (!audioCtx) return;
+            [523, 659, 784, 1047].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.15);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime + i * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.3);
+                osc.start(audioCtx.currentTime + i * 0.15);
+                osc.stop(audioCtx.currentTime + i * 0.15 + 0.3);
+            });
+        }
+
+        // 初始化石子
+        function initStones() {
+            const area = document.getElementById('stonesArea');
+            area.innerHTML = '';
+            for (let i = 0; i < TOTAL_STONES; i++) {
+                const stone = document.createElement('div');
+                stone.className = 'stone';
+                stone.innerHTML = '🪨';
+                stone.onclick = () => throwStone(stone, i);
+                area.appendChild(stone);
+            }
+        }
+
+        // 扔石子
+        function throwStone(stoneEl, index) {
+            if (gameWon || stoneEl.classList.contains('used')) return;
+
+            initAudio();
+            stoneEl.classList.add('used');
+            stonesUsed++;
+
+            // 创建落下的石子动画
+            const scene = document.getElementById('gameScene');
+            const falling = document.createElement('div');
+            falling.className = 'falling-stone';
+            falling.innerHTML = '🪨';
+            falling.style.left = '50%';
+            falling.style.top = '50px';
+            falling.style.transform = 'translateX(-50%)';
+            scene.appendChild(falling);
+
+            // 播放落水音效
+            setTimeout(() => {
+                playPlunkSound();
+            }, 500);
+
+            // 落下后添加到瓶子里
+            setTimeout(() => {
+                falling.remove();
+                addStoneToBottle();
+                raiseWater();
+            }, 800);
+
+            updateDisplay();
+        }
+
+        // 添加石子到瓶子
+        function addStoneToBottle() {
+            const bottleStones = document.getElementById('bottleStones');
+            const stone = document.createElement('span');
+            stone.className = 'bottle-stone';
+            stone.innerHTML = '🪨';
+            bottleStones.appendChild(stone);
+        }
+
+        // 水位上升
+        function raiseWater() {
+            waterLevel += WATER_PER_STONE;
+            if (waterLevel > 100) waterLevel = 100;
+
+            const water = document.getElementById('water');
+            water.style.height = waterLevel + '%';
+
+            playWaterRiseSound();
+            updateDisplay();
+
+            // 检查是否赢了
+            if (waterLevel >= WIN_WATER_LEVEL) {
+                setTimeout(winGame, 500);
+            }
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            document.getElementById('stonesLeft').textContent = TOTAL_STONES - stonesUsed;
+            document.getElementById('waterLevel').textContent = waterLevel;
+        }
+
+        // 赢了！
+        function winGame() {
+            gameWon = true;
+            playVictorySound();
+
+            // 乌鸦喝水动画
+            const crow = document.getElementById('crow');
+            crow.classList.add('drinking');
+
+            // 撒花特效
+            showConfetti();
+
+            // 显示成功弹窗
+            setTimeout(() => {
+                document.getElementById('stoneCount').textContent = stonesUsed;
+                document.getElementById('successModal').classList.remove('hidden');
+            }, 1500);
+        }
+
+        // 撒花特效
+        function showConfetti() {
+            const effect = document.getElementById('successEffect');
+            const emojis = ['🎉', '🎊', '✨', '💧', '🐦', '⭐'];
+            
+            for (let i = 0; i < 20; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                effect.appendChild(confetti);
+            }
+
+            setTimeout(() => {
+                effect.innerHTML = '';
+            }, 3500);
+        }
+
+        // 开始游戏
+        function startGame() {
+            document.getElementById('tutorial').classList.add('hidden');
+            initAudio();
+        }
+
+        // 重新开始
+        function restartGame() {
+            stonesUsed = 0;
+            waterLevel = 20;
+            gameWon = false;
+
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('water').style.height = '20%';
+            document.getElementById('bottleStones').innerHTML = '';
+            document.getElementById('crow').classList.remove('drinking');
+
+            initStones();
+            updateDisplay();
+        }
+
+        // 初始化
+        initStones();
+        updateDisplay();
+    </script>
+</body>
+</html>
