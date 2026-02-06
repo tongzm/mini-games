@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🧧 养生消消乐 (记忆版) 🧧</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', sans-serif;
+            background-color: #FFF3E0;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+            overflow: hidden;
+        }
+        h1 {
+            color: #D84315;
+            font-size: 1.8em;
+            margin: 10px 0;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.2em;
+            color: #5D4037;
+            margin-bottom: 10px;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-width: 380px;
+            margin: 0 auto;
+            background: #FFE0B2;
+            padding: 8px;
+            border-radius: 10px;
+            border: 2px solid #FFB74D;
+        }
+        .card {
+            background-color: #FF7043; /* 背面颜色：红 */
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 2.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            user-select: none;
+            transition: transform 0.3s;
+        }
+        .card.flipped {
+            background-color: white; /* 正面颜色：白 */
+            color: black;
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            visibility: hidden;
+        }
+        
+        /* 弹窗样式 */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+            border: 4px solid #FF5722;
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .tip-card {
+            background: #FFF8E1;
+            border: 1px dashed #FF9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 10px;
+        }
+        .tip-title { font-size: 1.5em; font-weight: bold; color: #BF360C; }
+        .tip-text { color: #5D4037; font-size: 1.1em; margin-top: 5px; }
+        
+        button {
+            background-color: #D84315;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px #870000;
+        }
+        button:active {
+            box-shadow: 0 2px #870000;
+            transform: translateY(2px);
+        }
+
+        #collection-btn {
+            margin-top: 20px;
+            background-color: #009688;
+            box-shadow: 0 4px #004D40;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍵 养生消消乐 (记忆版)</h1>
+    <div class="stats">
+        <span>第 <span id="level">1</span> 关</span>
+        <span>集卡: <span id="card-count">0</span>/5</span>
+    </div>
+
+    <div id="game-board"></div>
+
+    <button id="collection-btn" onclick="alert('图鉴功能开发中，继续玩会获得更多卡片哦！')">📖 我的养生图鉴</button>
+
+    <!-- 教程弹窗 -->
+    <div id="tutorial-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: #009688;">🧠 怎么玩？</h2>
+            <div style="font-size: 1.2em; text-align: left; padding: 10px;">
+                <p>1. 👉 点开卡片，记住它的样子。</p>
+                <p>2. 🔍 再点另一张。</p>
+                <p>3. ✨ 如果<b>两个一样</b>，就会消掉。</p>
+                <p>4. ❌ 如果<b>不一样</b>，卡片会盖回去，你要记住它们的位置哦！</p>
+            </div>
+            <button onclick="startGame()" style="background-color: #009688;">开始挑战记忆力！</button>
+        </div>
+    </div>
+
+    <!-- 获得卡片弹窗 -->
+    <div id="reward-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h2 style="color: #E65100;">✨ 恭喜过关 ✨</h2>
+            <p>获得一张养生知识卡</p>
+            <div class="tip-card">
+                <div class="tip-title" id="reward-icon">🍎</div>
+                <div class="tip-text" id="reward-text">一日一苹果，医生远离我</div>
+            </div>
+            <button onclick="nextLevel()">继续挑战</button>
+        </div>
+    </div>
+
+    <script>
+        const symbols = ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓'];
+        const healthTips = [
+            { icon: '🍵', text: '早起一杯温开水，肠胃通畅不后悔' },
+            { icon: '🚶', text: '饭后百步走，活到九十九' },
+            { icon: '🥗', text: '多吃蔬菜少吃肉，健康长寿这就够' },
+            { icon: '🦶', text: '睡前泡泡脚，胜吃安眠药' },
+            { icon: '🌞', text: '多晒太阳多通风，细菌病毒去无踪' }
+        ];
+
+        let level = 1;
+        let cardsCollected = 0;
+        let firstCard = null;
+        let lockBoard = false;
+        let matchesFound = 0;
+        let totalPairs = 0;
+
+        function startGame() {
+            document.getElementById('tutorial-modal').style.display = 'none';
+            initGame();
+        }
+
+        function initGame() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            document.getElementById('reward-modal').style.display = 'none';
+            matchesFound = 0;
+            firstCard = null;
+            lockBoard = false;
+            document.getElementById('level').innerText = level;
+
+            // 关卡设计 (保证偶数)
+            // L1: 12张 (6对)
+            // L2: 16张 (8对)
+            let totalCards = (level + 2) * 4; 
+            if (totalCards > 24) totalCards = 24; // 封顶24张
+            
+            totalPairs = totalCards / 2;
+            let pairsCount = totalPairs;
+
+            // 选图案
+            let selectedSymbols = [];
+            for (let i=0; i<pairsCount; i++) {
+                selectedSymbols.push(symbols[Math.floor(Math.random() * symbols.length)]);
+            }
+
+            // 生成成对的卡片
+            let deck = [...selectedSymbols, ...selectedSymbols];
+            deck.sort(() => 0.5 - Math.random());
+
+            deck.forEach(symbol => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.symbol = symbol;
+                card.innerText = '❓'; // 背面图案
+                card.addEventListener('click', flipCard);
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+            if (this.classList.contains('matched')) return;
+            if (this.classList.contains('flipped')) return;
+
+            this.classList.add('flipped');
+            this.innerText = this.dataset.symbol;
+
+            if (!firstCard) {
+                firstCard = this;
+                return;
+            }
+
+            checkForMatch(this);
+        }
+
+        function checkForMatch(secondCard) {
+            let isMatch = firstCard.dataset.symbol === secondCard.dataset.symbol;
+
+            if (isMatch) {
+                disableCards(secondCard);
+            } else {
+                unflipCards(secondCard);
+            }
+        }
+
+        function disableCards(secondCard) {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.add('matched');
+                secondCard.classList.add('matched');
+                
+                matchesFound++;
+                if (matchesFound === totalPairs) {
+                    setTimeout(showReward, 500);
+                }
+                resetBoard();
+            }, 500);
+        }
+
+        function unflipCards(secondCard) {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                firstCard.innerText = '❓';
+                secondCard.classList.remove('flipped');
+                secondCard.innerText = '❓';
+                resetBoard();
+            }, 1000); // 1秒记忆时间
+        }
+
+        function resetBoard() {
+            [firstCard, lockBoard] = [null, false];
+        }
+
+        function showReward() {
+            const tip = healthTips[Math.floor(Math.random() * healthTips.length)];
+            document.getElementById('reward-icon').innerText = tip.icon;
+            document.getElementById('reward-text').innerText = tip.text;
+            
+            document.getElementById('reward-modal').style.display = 'flex';
+            cardsCollected++;
+            document.getElementById('card-count').innerText = cardsCollected;
+        }
+
+        function nextLevel() {
+            level++;
+            initGame();
+        }
+    </script>
+</body>
+</html>

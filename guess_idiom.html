@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>👴 夕阳红猜猜乐 👵</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', serif;
+            background-color: #FFEBEE; /* 浅红背景 */
+            text-align: center;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #C62828;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px #FFCDD2;
+        }
+        .question-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 3px solid #E57373;
+        }
+        .question {
+            font-size: 2em; /* 超大字 */
+            font-weight: bold;
+            color: #B71C1C;
+            letter-spacing: 5px;
+        }
+        .hint {
+            font-size: 1.2em;
+            color: #666;
+            margin-top: 10px;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            background-color: #FF9800; /* 橙色按钮 */
+            color: white;
+            border: none;
+            padding: 20px 0;
+            font-size: 1.8em;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px #E65100;
+            transition: transform 0.1s;
+        }
+        button:active {
+            box-shadow: 0 2px #E65100;
+            transform: translateY(2px);
+        }
+        button.correct {
+            background-color: #4CAF50 !important;
+            box-shadow: 0 4px #2E7D32 !important;
+        }
+        button.wrong {
+            background-color: #9E9E9E !important;
+            box-shadow: 0 4px #616161 !important;
+        }
+        #score-area {
+            margin-top: 30px;
+            font-size: 1.5em;
+            color: #D84315;
+        }
+        #yuanbao {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌺 夕阳红猜猜乐 🌺</h1>
+
+    <div id="game-container">
+        <div id="score-area">
+            金元宝：<span id="score">0</span> <span id="yuanbao">💰</span>
+        </div>
+
+        <div class="question-box">
+            <div class="question" id="question-text">万事如__</div>
+            <div class="hint" id="hint-text">祝您样样事情都顺心</div>
+        </div>
+
+        <div class="options" id="options-container">
+            <!-- 选项在这里生成 -->
+        </div>
+    </div>
+
+    <div id="end-screen" style="display:none;">
+        <h2 style="color: #D32F2F; font-size: 2.5em;">🎉 闯关成功！🎉</h2>
+        <p style="font-size: 1.5em;">您真是才高八斗！</p>
+        <p style="font-size: 1.2em; margin-top:20px;">一共获得：<span id="final-score" style="color:red;font-weight:bold;"></span> 个金元宝</p>
+        <button onclick="restartGame()" style="width:100%; margin-top:30px; background:#D32F2F;">再玩一次</button>
+    </div>
+
+    <script>
+        // 题库
+        const questions = [
+            { q: "万事如__", hint: "祝您样样事情都顺心", ans: "意", opts: ["意", "义", "异", "易"] },
+            { q: "寿比南__", hint: "祝您健康长寿", ans: "山", opts: ["山", "海", "天", "地"] },
+            { q: "__开富贵", hint: "形容家庭兴旺繁荣", ans: "花", opts: ["花", "华", "发", "画"] },
+            { q: "心想事__", hint: "心里想的都能实现", ans: "成", opts: ["成", "诚", "城", "呈"] },
+            { q: "岁岁平__", hint: "每年都平平安安", ans: "安", opts: ["安", "按", "岸", "案"] },
+            { q: "五谷丰__", hint: "庄稼大丰收", ans: "登", opts: ["登", "灯", "瞪", "蹬"] },
+            { q: "欢聚一__", hint: "全家人开心地在一起", ans: "堂", opts: ["堂", "糖", "塘", "唐"] },
+            { q: "知足常__", hint: "快乐的秘诀", ans: "乐", opts: ["乐", "勒", "了", "热"] }
+        ];
+
+        let currentQ = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            if (currentQ >= questions.length) {
+                showEndScreen();
+                return;
+            }
+
+            const q = questions[currentQ];
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('hint-text').innerText = q.hint;
+
+            const optsDiv = document.getElementById('options-container');
+            optsDiv.innerHTML = '';
+
+            // 打乱选项顺序
+            let shuffledOpts = [...q.opts].sort(() => 0.5 - Math.random());
+
+            shuffledOpts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(btn, opt, q.ans);
+                optsDiv.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(btn, choice, answer) {
+            // 锁定所有按钮，防止连点
+            const buttons = document.querySelectorAll('.options button');
+            buttons.forEach(b => b.disabled = true);
+
+            if (choice === answer) {
+                btn.classList.add('correct');
+                score += 10;
+                document.getElementById('score').innerText = score;
+                // 延迟进入下一题
+                setTimeout(() => {
+                    currentQ++;
+                    loadQuestion();
+                }, 800);
+            } else {
+                btn.classList.add('wrong');
+                // 答错不扣分，提示一下正确答案（变绿）
+                buttons.forEach(b => {
+                    if(b.innerText === answer) b.classList.add('correct');
+                });
+                setTimeout(() => {
+                    currentQ++; // 答错也进下一题，不卡关
+                    loadQuestion();
+                }, 1500);
+            }
+        }
+
+        function showEndScreen() {
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'block';
+            document.getElementById('final-score').innerText = score;
+        }
+
+        function restartGame() {
+            currentQ = 0;
+            score = 0;
+            document.getElementById('score').innerText = score;
+            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('end-screen').style.display = 'none';
+            loadQuestion();
+        }
+
+        // 开始
+        loadQuestion();
+    </script>
+</body>
+</html>

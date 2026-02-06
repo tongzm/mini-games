@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🍎 福气连连看 🍊</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #FFF8E1; /* 喜庆的米黄色 */
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden; /* 防止滑动 */
+        }
+        h1 {
+            color: #D32F2F; /* 红色 */
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        #score-board {
+            font-size: 1.5em;
+            color: #E65100;
+            margin-bottom: 20px;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4列 */
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #FFECB3;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #FFCA28;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1; /* 正方形 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background-color 0.2s;
+            user-select: none;
+        }
+        .card.selected {
+            background-color: #B2DFDB; /* 选中变绿 */
+            transform: scale(0.95);
+            border: 3px solid #009688;
+        }
+        .card.matched {
+            visibility: hidden; /* 消除后隐藏 */
+        }
+        #message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            display: none;
+            z-index: 100;
+        }
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+            z-index: 99;
+        }
+        button {
+            background-color: #D32F2F;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #B71C1C;
+        }
+        button:active {
+            box-shadow: 0 2px 0 #B71C1C;
+            transform: translateY(2px);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏮 福气连连看 🏮</h1>
+    <div id="score-board">分数: <span id="score">0</span></div>
+
+    <div id="game-board">
+        <!-- 卡片会在这里生成 -->
+    </div>
+
+    <div id="message"></div>
+    <div id="game-over" style="display:none;">
+        <h2 style="color: #D32F2F; font-size: 2.5em;">🎉 恭喜发财！🎉</h2>
+        <p style="font-size: 1.2em; color: #555;">您真棒！身体健康，万事如意！</p>
+        <button onclick="initGame()">再玩一次</button>
+    </div>
+
+    <script>
+        const symbols = ['🍎', '🍊', '🍇', '🍉', '🍓', '🍑', '🍒', '🍍'];
+        let cards = [];
+        let firstCard = null;
+        let lockBoard = false;
+        let score = 0;
+        let matchesFound = 0;
+        const totalPairs = 8; // 4x4 网格，共 16 张牌，8 对
+
+        function initGame() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('game-board').style.display = 'grid';
+            score = 0;
+            matchesFound = 0;
+            document.getElementById('score').innerText = score;
+            firstCard = null;
+            lockBoard = false;
+
+            // 生成成对的卡片
+            let deck = [...symbols.slice(0, totalPairs), ...symbols.slice(0, totalPairs)];
+            // 洗牌
+            deck.sort(() => 0.5 - Math.random());
+
+            deck.forEach(symbol => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.symbol = symbol;
+                card.innerText = symbol; // 直接显示（老年人不需要记忆，直接找相同的就行）
+                // 如果要做记忆翻牌，这里可以先不显示innerText，点击才显示
+                // 但为了“简单”，我们做连连看，直接明牌！
+                
+                card.addEventListener('click', flipCard);
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return; // 不能点自己
+            if (this.classList.contains('matched')) return;
+
+            this.classList.add('selected');
+
+            if (!firstCard) {
+                firstCard = this;
+                return;
+            }
+
+            checkForMatch(this);
+        }
+
+        function checkForMatch(secondCard) {
+            let isMatch = firstCard.dataset.symbol === secondCard.dataset.symbol;
+
+            if (isMatch) {
+                disableCards(secondCard);
+            } else {
+                unflipCards(secondCard);
+            }
+        }
+
+        function disableCards(secondCard) {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.add('matched');
+                secondCard.classList.add('matched');
+                firstCard.classList.remove('selected');
+                secondCard.classList.remove('selected');
+                
+                score += 100;
+                document.getElementById('score').innerText = score;
+                matchesFound++;
+
+                showToast("✨ 好！ ✨");
+
+                if (matchesFound === totalPairs) {
+                    setTimeout(gameOver, 500);
+                }
+                
+                resetBoard();
+            }, 300);
+        }
+
+        function unflipCards(secondCard) {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('selected');
+                secondCard.classList.remove('selected');
+                resetBoard();
+            }, 500);
+        }
+
+        function resetBoard() {
+            [firstCard, lockBoard] = [null, false];
+        }
+
+        function showToast(text) {
+            const msg = document.getElementById('message');
+            msg.innerText = text;
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 800);
+        }
+
+        function gameOver() {
+            document.getElementById('game-board').style.display = 'none';
+            document.getElementById('game-over').style.display = 'block';
+        }
+
+        // 启动游戏
+        initGame();
+    </script>
+</body>
+</html>
