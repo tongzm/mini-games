@@ -120,6 +120,80 @@
         let matchesFound = 0;
         const totalPairs = 8; // 4x4 网格，共 16 张牌，8 对
 
+        // 音效系统
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 选中音效
+        function playSelectSound() {
+            if (!audioCtx) initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+
+        // 配对成功音效
+        function playMatchSound() {
+            if (!audioCtx) initAudio();
+            [523, 659, 784].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.08);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.08 + 0.15);
+                osc.start(audioCtx.currentTime + i * 0.08);
+                osc.stop(audioCtx.currentTime + i * 0.08 + 0.15);
+            });
+        }
+
+        // 配对失败音效
+        function playMismatchSound() {
+            if (!audioCtx) initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // 胜利音效
+        function playVictorySound() {
+            if (!audioCtx) initAudio();
+            [523, 659, 784, 1047].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.12);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime + i * 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.12 + 0.25);
+                osc.start(audioCtx.currentTime + i * 0.12);
+                osc.stop(audioCtx.currentTime + i * 0.12 + 0.25);
+            });
+        }
+
         function initGame() {
             const board = document.getElementById('game-board');
             board.innerHTML = '';
@@ -155,6 +229,7 @@
             if (this.classList.contains('matched')) return;
 
             this.classList.add('selected');
+            playSelectSound(); // 选中音效
 
             if (!firstCard) {
                 firstCard = this;
@@ -168,8 +243,10 @@
             let isMatch = firstCard.dataset.symbol === secondCard.dataset.symbol;
 
             if (isMatch) {
+                playMatchSound(); // 配对成功音效
                 disableCards(secondCard);
             } else {
+                playMismatchSound(); // 配对失败音效
                 unflipCards(secondCard);
             }
         }
@@ -221,6 +298,7 @@
         function gameOver() {
             document.getElementById('game-board').style.display = 'none';
             document.getElementById('game-over').style.display = 'block';
+            playVictorySound(); // 胜利音效
         }
 
         // 启动游戏

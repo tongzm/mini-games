@@ -171,8 +171,84 @@
         let matchesFound = 0;
         let totalPairs = 0;
 
+        // 音效系统
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 翻牌音效
+        function playFlipSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+
+        // 配对成功音效
+        function playMatchSound() {
+            if (!audioCtx) return;
+            [523, 659, 784].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.08);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.08 + 0.15);
+                osc.start(audioCtx.currentTime + i * 0.08);
+                osc.stop(audioCtx.currentTime + i * 0.08 + 0.15);
+            });
+        }
+
+        // 配对失败音效
+        function playMismatchSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // 过关音效
+        function playVictorySound() {
+            if (!audioCtx) return;
+            [523, 659, 784, 1047].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.12);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime + i * 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.12 + 0.25);
+                osc.start(audioCtx.currentTime + i * 0.12);
+                osc.stop(audioCtx.currentTime + i * 0.12 + 0.25);
+            });
+        }
+
         function startGame() {
             document.getElementById('tutorial-modal').style.display = 'none';
+            initAudio(); // 初始化音频
             initGame();
         }
 
@@ -222,6 +298,7 @@
 
             this.classList.add('flipped');
             this.innerText = this.dataset.symbol;
+            playFlipSound(); // 翻牌音效
 
             if (!firstCard) {
                 firstCard = this;
@@ -235,8 +312,10 @@
             let isMatch = firstCard.dataset.symbol === secondCard.dataset.symbol;
 
             if (isMatch) {
+                playMatchSound(); // 配对成功音效
                 disableCards(secondCard);
             } else {
+                playMismatchSound(); // 配对失败音效
                 unflipCards(secondCard);
             }
         }
@@ -278,6 +357,7 @@
             document.getElementById('reward-modal').style.display = 'flex';
             cardsCollected++;
             document.getElementById('card-count').innerText = cardsCollected;
+            playVictorySound(); // 过关音效
         }
 
         function nextLevel() {
