@@ -264,7 +264,6 @@
     <!-- 背景音乐 - 使用多个源保证兼容性 -->
     <audio id="bgMusic" loop preload="auto">
         <source src="https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3" type="audio/mpeg">
-        <source src="https://cdn.pixabay.com/audio/2021/09/06/audio_9a922e4d58.mp3" type="audio/mpeg">
     </audio>
 
     <header class="header">
@@ -327,13 +326,19 @@
         // 初始化播放（需要用户交互）
         function initMusic() {
             if (musicInit) return;
+
+            // 先加载音频
+            bgMusic.load();
+
             bgMusic.play().then(() => {
                 musicBtn.classList.add('rotating');
                 musicIcon.innerText = '⏸️';
                 isPlaying = true;
                 musicInit = true;
+                console.log('音乐播放成功 ✅');
             }).catch(err => {
                 console.log('自动播放被阻止，等待用户点击:', err);
+                // 不显示错误提示，因为这是正常行为
             });
         }
 
@@ -416,6 +421,7 @@
             const textEl = document.getElementById('greeting-text');
             const index = Math.floor(Math.random() * greetings.length);
             textEl.innerText = greetings[index];
+            console.log('祝福语初始化完成:', greetings[index]);
         }
 
         // 随机切换祝福语
@@ -497,7 +503,9 @@
             initGreeting();
 
             // 尝试初始化音乐（可能被浏览器阻止）
-            initMusic();
+            setTimeout(() => {
+                initMusic();
+            }, 500);
         });
 
         // 任何点击都尝试初始化音乐（兼容性）
