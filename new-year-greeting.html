@@ -169,11 +169,100 @@
             color: rgba(255,255,255,0.4);
             font-size: 12px;
         }
+
+        /* 音乐控制按钮 */
+        .music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-size: 28px;
+        }
+
+        .music-control:active {
+            transform: scale(0.95);
+        }
+
+        .music-control.rotating {
+            animation: rotate 3s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 音量滑块 */
+        .volume-slider {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .volume-slider.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .volume-slider input[type="range"] {
+            width: 100px;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #ddd;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .volume-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #FFD700;
+            border-radius: 50%;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
     <div class="cloud-bg"></div>
+
+    <!-- 音乐控制按钮 -->
+    <div class="music-control" id="musicBtn" onclick="toggleMusic()" title="播放/暂停音乐">
+        <span id="musicIcon">🎵</span>
+    </div>
+
+    <!-- 音量滑块 -->
+    <div class="volume-slider" id="volumeSlider">
+        <span>🔊</span>
+        <input type="range" id="volumeControl" min="0" max="100" value="50" oninput="changeVolume()">
+    </div>
+
+    <!-- 背景音乐 -->
+    <audio id="bgMusic" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-chinese-new-year-traditional-1189.mp3" type="audio/mpeg">
+    </audio>
 
     <header class="header">
         <h1>🧧 新春祝福助手</h1>
@@ -193,6 +282,78 @@
     <div class="footer">由凌凌为您制作 ❤️ 祝您新年快乐</div>
 
     <script>
+        // 音乐控制功能
+        const bgMusic = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('musicBtn');
+        const musicIcon = document.getElementById('musicIcon');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeControl = document.getElementById('volumeControl');
+        let isPlaying = false;
+        let volumeSliderTimeout;
+
+        // 设置初始音量
+        bgMusic.volume = 0.5;
+
+        // 切换音乐播放/暂停
+        function toggleMusic() {
+            if (isPlaying) {
+                bgMusic.pause();
+                musicBtn.classList.remove('rotating');
+                musicIcon.innerText = '🎵';
+                isPlaying = false;
+            } else {
+                bgMusic.play().then(() => {
+                    musicBtn.classList.add('rotating');
+                    musicIcon.innerText = '⏸️';
+                    isPlaying = true;
+                }).catch(err => {
+                    console.log('播放失败，需要用户交互:', err);
+                    alert('点击任意处后再试一次哦~');
+                });
+            }
+        }
+
+        // 改变音量
+        function changeVolume() {
+            const volume = volumeControl.value / 100;
+            bgMusic.volume = volume;
+
+            // 重置超时，3秒后隐藏音量滑块
+            clearTimeout(volumeSliderTimeout);
+            volumeSliderTimeout = setTimeout(() => {
+                volumeSlider.classList.remove('show');
+            }, 3000);
+        }
+
+        // 长按音乐按钮显示音量控制
+        musicBtn.addEventListener('mousedown', () => {
+            volumeSlider.classList.add('show');
+        });
+        musicBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            volumeSlider.classList.add('show');
+        });
+
+        // 点击其他地方隐藏音量滑块
+        document.addEventListener('click', (e) => {
+            if (!musicBtn.contains(e.target) && !volumeSlider.contains(e.target)) {
+                volumeSlider.classList.remove('show');
+            }
+        });
+
+        // 检查浏览器自动播放策略
+        document.addEventListener('DOMContentLoaded', () => {
+            // 尝试自动播放（可能会被浏览器阻止）
+            bgMusic.play().then(() => {
+                musicBtn.classList.add('rotating');
+                musicIcon.innerText = '⏸️';
+                isPlaying = true;
+            }).catch(() => {
+                // 自动播放被阻止，等待用户交互
+                console.log('等待用户点击播放音乐');
+            });
+        });
+
         // 祝福语题库 (精选20条)
         const greetings = [
             "新春快乐！祝您身体健康，万事如意，笑口常开，阖家幸福！",
