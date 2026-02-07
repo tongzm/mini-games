@@ -405,9 +405,9 @@
         <span id="musicIcon">🎵</span>
     </div>
 
-    <!-- 背景音乐 -->
+    <!-- 背景音乐 - 喜庆欢快的庆典音乐 -->
     <audio id="bgMusic" loop preload="auto">
-        <source src="https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dragon%20and%20Toast.mp3" type="audio/mpeg">
+        <source src="https://incompetech.com/music/royalty-free/mp3-royaltyfree/Celebration.mp3" type="audio/mpeg">
     </audio>
 
     <header class="header">
@@ -620,8 +620,8 @@
         }
 
         function animateFireworks() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 清除画布（透明背景，不遮挡内容）
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             fireworks = fireworks.filter(f => {
                 f.draw();
