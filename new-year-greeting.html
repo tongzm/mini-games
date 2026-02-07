@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>新春祝福助手 - 给您拜年啦</title>
+    <style>
+        /* CSS Reset & Basic */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none; /* 针对 iOS Safari */
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #D9342B; /* 正宫红 */
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* 防止滚动 */
+        }
+
+        /* 标题 */
+        .header {
+            position: absolute;
+            top: 5vh;
+            text-align: center;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 32px;
+            color: #FFD700; /* 流光金 */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+
+        /* 祥云装饰 (简单CSS模拟) */
+        .cloud-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.1;
+            background-image: radial-gradient(#FFD700 2px, transparent 2px);
+            background-size: 30px 30px;
+            z-index: 0;
+        }
+
+        /* 祝福语卡片 */
+        .card-container {
+            width: 90%;
+            max-width: 600px;
+            height: 50vh; /* 占据屏幕一半高度 */
+            background-color: #FFF8DC; /* 米黄色 */
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 4px solid #FFD700;
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+            margin-bottom: 30px;
+            transition: transform 0.2s ease;
+        }
+
+        /* 文字内容 */
+        #greeting-text {
+            font-size: 36px; /* 默认超大字号 */
+            line-height: 1.6;
+            color: #B22222; /* 深红 */
+            text-align: center;
+            font-weight: bold;
+            word-break: break-word; /* 防止长词溢出 */
+        }
+        
+        /* 针对特大字号的媒体查询 */
+        @media (min-width: 768px) {
+            #greeting-text { font-size: 48px; }
+        }
+        @media (max-width: 350px) {
+            #greeting-text { font-size: 28px; }
+        }
+
+        /* 按钮区域 */
+        .btn-group {
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        /* 通用按钮样式 */
+        .btn {
+            border: none;
+            border-radius: 50px;
+            padding: 20px 0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: center;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 换一句 (主按钮) */
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #B22222;
+            flex: 2; /* 占比大 */
+        }
+
+        /* 复制 (次按钮) */
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid #FFD700;
+            color: #FFD700;
+            flex: 1;
+        }
+
+        /* Toast 提示框 */
+        #toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 30px 50px;
+            border-radius: 15px;
+            font-size: 24px;
+            z-index: 100;
+            text-align: center;
+            display: none; /* 默认隐藏 */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* 简单的淡入淡出动画 */
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 版权脚标 */
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cloud-bg"></div>
+
+    <header class="header">
+        <h1>🧧 新春祝福助手</h1>
+    </header>
+
+    <main class="card-container" id="card">
+        <div id="greeting-text">加载中...</div>
+    </main>
+
+    <div class="btn-group">
+        <button class="btn btn-primary" onclick="newGreeting()">🔄 换一句</button>
+        <button class="btn btn-secondary" onclick="copyGreeting()">📋 复制</button>
+    </div>
+
+    <div id="toast">✅ 已复制！去微信粘贴吧</div>
+
+    <div class="footer">由凌凌为您制作 ❤️ 祝您新年快乐</div>
+
+    <script>
+        // 祝福语题库 (精选20条)
+        const greetings = [
+            "新春快乐！祝您身体健康，万事如意，笑口常开，阖家幸福！",
+            "过年好！愿您新的一年：吃得好，睡得香，没烦恼，福气旺！",
+            "金蛇舞春风，给您拜年啦！祝您和家人平平安安，顺顺利利！",
+            "祝您新的一年：身体硬朗朗，心情喜洋洋，日子红火火！",
+            "春节到，福气到！祝您福如东海长流水，寿比南山不老松！",
+            "给您拜个早年！愿新的一年里，好事接二连三，心情四季如春！",
+            "新春大吉！祝您：心想事成，岁岁平安，年年有余！",
+            "祝您新年快乐！愿您每天都精神百倍，开开心心，健健康康！",
+            "过年啦！祝您老当益壮，精神矍铄，儿孙满堂，乐享天伦！",
+            "新的一年，祝您腿脚灵便，牙口好，吃嘛嘛香，身体倍儿棒！",
+            "给您送福啦！愿您新的一年，烦恼全消，快乐加倍，幸福安康！",
+            "春节快乐！祝您吉祥如意，花开富贵，生活美满，好运连连！",
+            "祝您：新春快乐，大吉大利！愿您天天开心，事事顺心！",
+            "拜年啦！祝您和老伴儿：身体健康，恩恩爱爱，白头偕老！",
+            "祝您新年新气象，红红火火过大年，平平安安一辈子！",
+            "愿您新的一年：多喜乐，长安宁，岁无忧，久安康！",
+            "新春佳节到，祝您：福气满满，财气滚滚，喜气洋洋！",
+            "给您拜年了！祝您越活越年轻，越活越开心，越活越精彩！",
+            "祝您新的一年：无病无灾，无忧无虑，开开心心过好每一天！",
+            "新年好！祝您阖家团圆，幸福美满，龙马精神，万事顺遂！"
+        ];
+
+        let lastIndex = -1;
+
+        // 初始化
+        window.onload = function() {
+            newGreeting();
+        };
+
+        // 随机切换祝福语
+        function newGreeting() {
+            const textEl = document.getElementById('greeting-text');
+            const cardEl = document.getElementById('card');
+            
+            // 简单的防重复逻辑
+            let index;
+            do {
+                index = Math.floor(Math.random() * greetings.length);
+            } while (index === lastIndex && greetings.length > 1);
+            
+            lastIndex = index;
+            
+            // 动画效果
+            textEl.style.opacity = 0;
+            setTimeout(() => {
+                textEl.innerText = greetings[index];
+                textEl.style.opacity = 1;
+                // 添加一次跳动动画
+                cardEl.classList.remove('fade-in');
+                void cardEl.offsetWidth; // 触发重绘
+                cardEl.classList.add('fade-in');
+            }, 200);
+        }
+
+        // 复制功能
+        function copyGreeting() {
+            const text = document.getElementById('greeting-text').innerText;
+            
+            // 尝试使用现代 API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(showToast).catch(err => {
+                    // 降级方案
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        // 降级复制方案 (兼容老设备)
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // 避免滚动
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) showToast();
+                else alert('复制失败，请手动长按文字复制哦~');
+            } catch (err) {
+                alert('复制失败，请手动长按文字复制哦~');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // 显示 Toast 提示
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
